@@ -1,0 +1,50 @@
+pipeline {
+  agent any
+
+  environment {
+    REMOTE_USER = "ubuntu"
+    REMOTE_HOST = "3.137.166.20"
+    REMOTE_DIR  = "/home/ubuntu/jarvis"
+    CRED_ID     = "jarvins-key"
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        // CHANGE THIS --->
+        git branch: 'main', url: 'https://github.com/Sharayu1707/Deploy-Jarvis-Desktop-Voice-Assistant.git',
+        credentialsId: 'jarvins' 
+      }
+    }
+
+    stage('Package & Transfer') {
+      steps {
+        sshagent(credentials: ["${CRED_ID}"]) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'mkdir -p ${REMOTE_DIR}'
+            rsync -avz --delete --exclude='.git' ./ ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
+          """
+        }
+      }
+    }
+
+    stage('Remote: Setup & Restart') {
+      steps {
+        sshagent(credentials: ["${CRED_ID}"]) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
+              cd ${REMOTE_DIR} &&
+              sudo apt update -y &&
+              sudo apt install -y python3-venv python3-pip &&
+              python3 -m venv venv &&
+              source venv/bin/activate &&
+              pip install -r requirements.txt &&
+              sudo systemctl restart jarvis || echo "Service not found, check systemd file"
+            '
+          """
+        }
+      }
+    }
+  }
+}
