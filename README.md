@@ -34,40 +34,44 @@ Deploy-Jarvis-Desktop-Voice-Assistant /
 
 ### Step 1: (terraform setup)
 
-create-file
-|
-|_provider.tf
-|
-|_main.tf 
-|
-|_variable.tf
-|
-|_output.tf
+#### File Structure
 
-#### To Deploy
+File Name	           Description
 
-terraform init
+provider.tf	       Configure AWS provider & region
 
-terraform plan
+variables.tf	     Define variables (AMI, instance type, key, CIDR)
 
-terraform apply
+main.tf	           EC2 instance + Security Group + Key Pair
+
+outputs.tf	       Output EC2 Public IP
+
+user_data.sh	     Bootstrap script (installation/configuration)
+
+
+#### Deployment Steps
+
+terraform init      # Initialize Terraform
+
+terraform plan      # Review execution plan
+
+terraform apply     # Deploy infrastructure
+
 
 ![Architecture](images/Screenshot%20(116).png)
 
-### Step 2 : (jenkins setup)
+### Step 2: (jenkins setup)
 
-SSH into instance:
-
+#### SSH into EC2 Instance
 ssh -i key.pem ubuntu@PUBLIC_IP
 
-Install Jenkins:
+#### Install Jenkins
 
 sudo apt update
 
 sudo apt install -y openjdk-11-jdk
 
 wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
-
 sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
 
 sudo apt update
@@ -78,66 +82,72 @@ sudo systemctl enable jenkins
 
 sudo systemctl start jenkins
 
-Access Jenkins:
+#### Access Jenkins
+
+Open browser and visit:
 
 http://PUBLIC_IP:8080
 
-Initial Password:
+#### Get Jenkins Initial Admin Password
 
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
 
-Jenkinsfile for Deployment
+#### Jenkinsfile (CI/CD Deployment Pipeline)
 
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    REMOTE_USER = "ubuntu"
-    REMOTE_HOST = "3.137.166.20"
-    REMOTE_DIR  = "/home/ubuntu/jarvis"
-    CRED_ID     = "jarvins-key"
-  }
-
-  stages {
-
-    stage('Checkout') {
-      steps {
-        // CHANGE THIS --->
-        git branch: 'main', url: 'https://github.com/Sharayu1707/Deploy-Jarvis-Desktop-Voice-Assistant.git',
-        credentialsId: 'jarvins' 
-      }
+    environment {
+        REMOTE_USER = "ubuntu"
+        REMOTE_HOST = "3.137.166.20"
+        REMOTE_DIR  = "/home/ubuntu/jarvis"
+        CRED_ID     = "jarvins-key"
     }
 
-    stage('Package & Transfer') {
-      steps {
-        sshagent(credentials: ["${CRED_ID}"]) {
-          sh """
-            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'mkdir -p ${REMOTE_DIR}'
-            rsync -avz --delete --exclude='.git' ./ ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
-          """
+    stages {
+
+        stage('Checkout') {
+            steps {
+                // CHANGE THIS ---> 
+                git branch: 'main', 
+                    url: 'https://github.com/Sharayu1707/Deploy-Jarvis-Desktop-Voice-Assistant.git',
+                    credentialsId: 'jarvins'
+            }
         }
-      }
-    }
 
-    stage('Remote: Setup & Restart') {
-      steps {
-        sshagent(credentials: ["${CRED_ID}"]) {
-          sh """
-            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
-              cd ${REMOTE_DIR} &&
-              sudo apt update -y &&
-              sudo apt install -y python3-venv python3-pip &&
-              python3 -m venv venv &&
-              source venv/bin/activate &&
-              pip install -r requirements.txt &&
-              sudo systemctl restart jarvis || echo "Service not found, check systemd file"
-            '
-          """
+        stage('Package & Transfer') {
+            steps {
+                sshagent(credentials: ["${CRED_ID}"]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} 'mkdir -p ${REMOTE_DIR}'
+                        rsync -avz --delete --exclude='.git' ./ ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
+                    """
+                }
+            }
         }
-      }
+
+        stage('Remote: Setup & Restart') {
+            steps {
+                sshagent(credentials: ["${CRED_ID}"]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
+                            cd ${REMOTE_DIR} &&
+                            sudo apt update -y &&
+                            sudo apt install -y python3-venv python3-pip &&
+                            python3 -m venv venv &&
+                            source venv/bin/activate &&
+                            pip install -r requirements.txt &&
+                            sudo systemctl restart jarvis || echo "Service not found, check systemd file"
+                        '
+                    """
+                }
+            }
+        }
     }
-  }
 }
+
+
+![Architecture](images/Screenshot%20(120).png)
 
 #### step 3 : (Add Jenkins SSH Credentials)
 
@@ -161,7 +171,7 @@ Every push = automatic deployment.
 
 ![Architecture](images/Screenshot%20(117).png)
 
-#### Step 5 : ()
+#### Step 5 : (output)
 
 python3 jarvins.py
 
