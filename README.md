@@ -163,7 +163,23 @@ ID → ubuntu
 
 ![Architecture](images/Screenshot%20(121).png)
 
-#### Step 4 : (Deployment)
+#### step 4 : (Add webhooks)
+
+Go to:
+
+GitHub → Repo → Settings → Webhooks → Add Webhook
+
+URL:
+
+http://jenkins-ip:8080/github-webhook/
+
+Content Type → application/json
+
+Trigger → Just Push
+
+
+
+#### Step 5 : (CICD pipeline)
 
 Create Job → Pipeline from SCM → Select Repo → Add Jenkinsfile Path
 
@@ -171,7 +187,7 @@ Every push = automatic deployment.
 
 ![Architecture](images/Screenshot%20(117).png)
 
-#### Step 5 : (output)
+#### Step 6 : (output)
 
 python3 jarvins.py
 
