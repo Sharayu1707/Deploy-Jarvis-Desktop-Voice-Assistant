@@ -161,9 +161,11 @@ Every push = automatic deployment.
 
 ![Architecture](images/Screenshot%20(117).png)
 
-#### Step 5 : (command)
+#### Step 5 : ()
 
 python3 jarvins.py
+
+![Architecture](images/Screenshot%20(122).png)
 
 ## Outcomes
 
@@ -172,5 +174,4 @@ Deployed an AI-based Jarvis voice assistant on AWS using Terraform and Python au
 Implemented Infrastructure as Code (IaC), automated EC2 provisioning, environment setup using user data scripts, virtual environment & remote deployment.
 
 
-![Architecture](images/Screenshot%20(122).png)
 
